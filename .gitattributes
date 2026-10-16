@@ -1,0 +1,4 @@
+# This bundle ships byte-exact upstream content: the skill file's digest is
+# compared against upstream on every sync. Disable every line-ending and
+# encoding conversion so a checkout can never rewrite a byte.
+* -text

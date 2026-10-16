@@ -1,0 +1,13 @@
+# npm / node
+node_modules/
+dist/
+*.tgz
+.npm-cache/
+
+# local sync scratch (staging, backups, caches) - never commit
+.skill-sync/
+# a state write interrupted between write and replace
+.skill-sync-state.json.tmp
+
+# superpowers SDD workspace
+.superpowers/

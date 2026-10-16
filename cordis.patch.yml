@@ -1,0 +1,12 @@
+# aliyun/alibabacloud-aiops-skills bundle for DeepSeek Harness.
+# Inserts exactly one filesystem Skill provider whose only root is this
+# package's own `skills/` directory, resolved from the installed package
+# identity anchored at the profile (Loader baseUrl) — never as a path
+# concatenated onto baseUrl.
+- insert:
+    - id: alibabacloud-workbench-cli-filesystem
+      name: '@deepseek-ai/dsh-skill-filesystem'
+      config:
+        providerName: alibabacloud-workbench-cli-plugin
+        includeDefaultRoots: false
+        bundledSkillDir: !!js process.getBuiltinModule('node:path').join(process.getBuiltinModule('node:path').dirname(process.getBuiltinModule('node:module').createRequire(baseUrl).resolve('alibabacloud-workbench-cli-skill-dsh/package.json')), 'skills')

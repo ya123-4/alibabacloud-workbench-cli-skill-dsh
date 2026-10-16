@@ -1,0 +1,40 @@
+{
+  "name": "alibabacloud-workbench-cli-skill-dsh",
+  "version": "0.0.1",
+  "description": "DeepSeek Harness skill bundle for aliyun/alibabacloud-aiops-skills: the Alibaba Cloud Workbench CLI skill (0.0.1). Skill-only bundle; the CLI binary itself is an external dependency this package does not ship.",
+  "license": "Apache-2.0",
+  "type": "module",
+  "main": "./lib/index.js",
+  "exports": {
+    ".": "./lib/index.js",
+    "./package.json": "./package.json"
+  },
+  "files": [
+    "lib",
+    "cordis.patch.yml",
+    "skills",
+    "README.md",
+    "README.zh.md",
+    "LICENSE",
+    "THIRD_PARTY_NOTICES.md"
+  ],
+  "engines": {
+    "node": ">=18"
+  },
+  "keywords": [
+    "dsh-plugin",
+    "deepseek-harness",
+    "agent-skill",
+    "alibabacloud",
+    "workbench",
+    "aiops"
+  ],
+  "scripts": {
+    "pack": "npm pack"
+  },
+  "dsh": {
+    "bundle": {
+      "patch": "./cordis.patch.yml"
+    }
+  }
+}
