@@ -1,0 +1,15 @@
+{
+  "schema": 1,
+  "package": "alibabacloud-workbench-cli-skill-dsh",
+  "upstream": "aliyun/alibabacloud-aiops-skills",
+  "syncedTag": "alibabacloud-workbench-cli-0.0.1",
+  "syncedCommit": "a75cd5da7b81115a6c9d1de8ea1fd53891d45066",
+  "syncedAt": "2026-10-16T15:39:33+00:00",
+  "overlayVersion": 1,
+  "skills": {
+    "alibabacloud-workbench-cli": {
+      "files": 2,
+      "sha256": "e816b3a8034ff5c0f344fdfa47b954bee356704ca17df26ad7ea34c9a39e9585"
+    }
+  }
+}
