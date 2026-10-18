@@ -1,7 +1,6 @@
 ---
 name: alibabacloud-workbench-cli
-description: |
-  Agent-native CLI for managing ECS instances without public IPs, primarily for single-instance operations. It supports millisecond-level remote command execution, large file transfers up to 1GB, and TCP port forwarding. It offers four authentication modes: AK, RamRoleArn, CredentialsCmd, and CredentialsURI. Use it to run commands, deploy code, view logs, check processes, transfer files, set up port forwarding, or query and filter ECS instance lists.
+description: '面向 agent 的 CLI，用于管理没有公网 IP 的 ECS 实例，主要面向单实例操作。支持毫秒级远程命令执行、最大 1GB 的文件传输和 TCP 端口转发，提供四种认证方式：AK、RamRoleArn、CredentialsCmd 和 CredentialsURI。可用它执行命令、部署代码、查看日志、检查进程、传输文件、配置端口转发，或查询和筛选 ECS 实例列表。'
 license: Apache-2.0
 metadata:
   domain: cloud-infrastructure
@@ -268,6 +267,80 @@ workbench daemon stop       # Closes all sessions
 
 The CLI auto-infers region from the instance ID 3-character prefix (covers 290+ regions). If inference fails, `--region` is required. For `list` command, `--region` is always required.
 
+### 10. Instance lifecycle & monitoring (ECS OpenAPI)
+
+`workbench` has no start/stop/metrics commands — use the ECS and CloudMonitor OpenAPI directly. The plugin ships three dependency-free scripts under `scripts/` (they read the same AK from `~/.workbench/config.json`):
+
+```bash
+# status / start / stop (stop needs --yes; both accept --wait)
+python scripts/ecs_instance.py status --instance i-xxxxxxxx --region ap-northeast-1
+python scripts/ecs_instance.py start  --instance i-xxxxxxxx --region ap-northeast-1 --wait
+python scripts/ecs_instance.py stop   --instance i-xxxxxxxx --region ap-northeast-1 --wait --yes
+
+# CloudMonitor metrics (CPU, bandwidth, ...)
+python scripts/ecs_metrics.py --instance i-xxxxxxxx --region ap-northeast-1 \
+    --metric CPUUtilization --hours 3 --period 300 --limit 12
+
+# post-stop stats: CPU avg/peak + intranet/internet traffic totals
+# (works on a stopped instance too — CloudMonitor keeps historical points)
+python scripts/ecs_stats.py --instance i-xxxxxxxx --region ap-northeast-1 --hours 6
+
+# same + EIP bandwidth / packet rates / rate-limit drops (auto-detects the bound EIP)
+python scripts/ecs_stats.py --instance i-xxxxxxxx --region ap-northeast-1 --hours 6 --with-eip
+
+# month-to-date EIP outbound traffic + free-quota status (used / remaining / over)
+python scripts/ecs_stats.py --instance i-xxxxxxxx --region ap-northeast-1 --month --free-quota-gb 220
+
+# account balance + yesterday spend + month-to-date spend (BSS OpenAPI)
+python scripts/ecs_stats.py --billing
+
+# stop and print the stats in one shot
+python scripts/ecs_instance.py stop --instance i-xxxxxxxx --region ap-northeast-1 --wait --yes --report
+```
+
+Notes:
+
+- Required RAM actions: `ecs:DescribeInstances`, `ecs:StartInstance`, `ecs:StopInstance`, plus `cms:DescribeMetricList` (or `AliyunCloudMonitorReadOnlyAccess`). A missing CloudMonitor grant returns `403 NoPermission`.
+- `StartInstance` on an already-Running instance succeeds as a no-op — useful as a safe permission probe.
+- Spot instances may fail to start with `InsufficientSpotCapacity`; that is capacity, not permission.
+- After a start, Cloud Assistant needs a few seconds before `workbench exec` succeeds.
+- `stop --stop-mode` defaults to `StopCharging` (节省停机模式: no vCPU/memory charge; disk/EIP still billed). Use `KeepCharging` when the instance must stay resumable. `stop --report` prints the CloudMonitor summary after stopping.
+- `--month` uses the CDT OpenAPI `ListCdtInternetTraffic` (version **2021-08-13**) — the same numbers as the CDT console — and falls back to CloudMonitor `net.tx` Sum only if the CDT call fails. Free quota (since 2025-06-01): 20 GB/month mainland China, 200 GB/month elsewhere; picked by region prefix, override with `--free-quota-gb`. Requires `cdt:ListCdtInternetTraffic`.
+- `--billing` uses BSS OpenAPI `QueryAccountBalance` and `QueryAccountBill` (`Granularity=DAILY` + `BillingDate` for yesterday); requires BSS read permission such as `AliyunBSSReadOnlyAccess`.
+- All scripts take `--region` (or `ECS_REGION`) because they cannot infer it from the instance id; `workbench` itself infers it from the id prefix.
+
+See `references/ecs-vpn-ops.md` for WireGuard server setup and stability troubleshooting notes.
+
+### 11. Instance reports
+
+`workbench` has no reporting command either. `scripts/ecs_report.py` collects one instance's
+facts from ECS / CloudMonitor / CDT / BSS and renders a Markdown report. It is **read-only**:
+only `Describe*` / `Query*` / `List*` calls are made, so it never starts, stops or changes
+anything — and it still works on a stopped instance, from CloudMonitor's historical points.
+
+```bash
+# default: last 24h of metrics, writes ./ECS-实例报告-<name>-<YYYYMMDD-HHmm>.md
+python scripts/ecs_report.py --instance i-xxxxxxxx --region ap-northeast-1
+
+# EIP detail + account billing, 72h window, print instead of writing a file
+python scripts/ecs_report.py --instance i-xxxxxxxx --region ap-northeast-1 \
+    --with-eip --billing --hours 72 --stdout
+
+# machine-readable collection for downstream processing
+python scripts/ecs_report.py --instance i-xxxxxxxx --region ap-northeast-1 --json
+```
+
+Eight sections: overview, spec & storage, network (with an EIP drill-down), resource usage,
+public traffic & free quota, account billing, rule-based risks and suggestions, and data
+provenance. Two conventions are deliberate: a missing value is printed as `—` or with the
+reason it is missing (**never silently 0**), and every section names the API it came from.
+`--out DIR` chooses the output directory; `--json` skips rendering entirely.
+
+Two risk rules are worth knowing because both are easy to get wrong by hand: an instance with
+`InternetMaxBandwidthOut=0` can still reach the internet through a bound EIP (the report warns
+only when there is no EIP either), and the instance-level public-bandwidth metrics are a
+different dimension from EIP bandwidth — the report says so instead of implying zero traffic.
+
 ## Exit Codes
 
 | Code | Constant | Trigger |
@@ -347,6 +420,7 @@ Restrict to specific instances: replace `"Resource": "*"` in each statement with
 | Permission denied (RAM) | 4 | Attach the RAM policy from `## RAM Permissions` to the user or role. |
 | `insecure permissions` | 2 | Run `chmod 600 ~/.workbench/config.json`. |
 | STS token expired | 4 | If using `RamRoleArn` mode, the CLI auto-refreshes. If using static STS, update the token. |
+| `CloudAssistantInvokeTimeout` / `ExecutionTimeout` from `exec` | 1 | Workbench's login helper runs `acs-plugin-manager -e -P config_ecs_instance_connect --params --install` under a 10s Cloud Assistant timeout. On some VPCs `service.axt.aliyuncs.com` resolves to the unreachable `100.100.100.10`, costing 2×5s so the command lands right at the limit. Fix: add `127.0.0.1 service.axt.aliyuncs.com` to the instance's `/etc/hosts` (back up first) so the probe fails fast and falls back to the regional endpoint (`<region>.axt.aliyun.com`). Verify with `RunCommand`, `tcpdump`, and logs under `/usr/local/share/aliyun-assist/<ver>/log/`. |
 
 ## DeepSeek Harness notes
 

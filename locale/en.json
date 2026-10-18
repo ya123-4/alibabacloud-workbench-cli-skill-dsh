@@ -1,0 +1,5 @@
+{
+  "meta": {
+    "description": "DeepSeek Harness skill bundle for the Alibaba Cloud Workbench CLI skill (0.0.1) from aliyun/alibabacloud-aiops-skills. Skill-only; the CLI binary is an external dependency, not shipped."
+  }
+}

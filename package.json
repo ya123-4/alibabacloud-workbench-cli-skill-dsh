@@ -1,13 +1,15 @@
 {
   "name": "alibabacloud-workbench-cli-skill-dsh",
   "version": "0.0.1",
-  "description": "DeepSeek Harness skill bundle for aliyun/alibabacloud-aiops-skills: the Alibaba Cloud Workbench CLI skill (0.0.1). Skill-only bundle; the CLI binary itself is an external dependency this package does not ship.",
+  "dshBundleBuild": "2026-10-18",
+  "description": "aliyun/alibabacloud-aiops-skills 中阿里云 Workbench CLI skill（0.0.1）的 DeepSeek Harness 插件包。纯 skill 包；CLI 二进制是外部依赖，本包不附带。在上游之上扩展了实例开关机与监控、占位统计与 Markdown 实例报告。 | DeepSeek Harness skill bundle for the Alibaba Cloud Workbench CLI skill (0.0.1) from aliyun/alibabacloud-aiops-skills. Skill-only; the CLI binary is an external dependency, not shipped. Adds local lifecycle/monitoring helpers, traffic stats and a Markdown instance report.",
   "license": "Apache-2.0",
   "type": "module",
   "main": "./lib/index.js",
   "exports": {
     ".": "./lib/index.js",
-    "./package.json": "./package.json"
+    "./package.json": "./package.json",
+    "./locale/*.json": "./locale/*.json"
   },
   "files": [
     "lib",
@@ -16,7 +18,8 @@
     "README.md",
     "README.zh.md",
     "LICENSE",
-    "THIRD_PARTY_NOTICES.md"
+    "THIRD_PARTY_NOTICES.md",
+    "locale"
   ],
   "engines": {
     "node": ">=18"

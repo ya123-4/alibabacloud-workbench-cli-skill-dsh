@@ -1,0 +1,5 @@
+{
+  "meta": {
+    "description": "aliyun/alibabacloud-aiops-skills 中阿里云 Workbench CLI skill（0.0.1）的 DeepSeek Harness 插件包。纯 skill 包；CLI 二进制是外部依赖，本包不附带。"
+  }
+}
